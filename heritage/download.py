@@ -77,10 +77,16 @@ if __name__ == "__main__":
                   "zoom": info["maxZoom"],
                   "turn": 0}
         uri = f"{URL}/GetImageDiv"
-        r = http.request("POST",
-                         uri,
-                         fields=fields
-                         )
+        try:
+            r = http.request("POST",
+                             uri,
+                             fields=fields
+                             )
+        except Exception as e:
+            print(f"POST '{uri}' with fields {fields} caused exception:")
+            print(e)
+            exit(100)
+
         if r.status != 200:
             print(f'POST request to "{uri}" with parameters {fields} failed with status {r.status}')
             exit(1)

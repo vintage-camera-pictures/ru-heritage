@@ -17,7 +17,16 @@ def parse(path):
             max_w = max(max_w, w)
             max_h = max(max_h, h)
             sizes.append(fn)
-    return sizes, (max_h, max_w)
+    sizes_cleaned = list()
+    for k, x in enumerate(sizes):
+        f, e = os.path.splitext(os.path.basename(x))
+        d, _ = os.path.split(x)
+        blanked = os.path.join(d, f"{f}-blanked{e}")
+        if blanked in sizes:
+            continue
+        sizes_cleaned.append(x)
+
+    return sizes_cleaned, (max_h, max_w)
 
 
 def find_location(image, template_image, method=cv2.TM_CCOEFF_NORMED, threshold=0.45):
@@ -51,6 +60,9 @@ def process_image(input_fn, max_size, border_ratio=0.0, border_value=255, templa
                 im[y:y + h, x:x + w, 2] += 255 - template_image
             else:
                 print(f"failed to remove watermark: '{input_fn}' (colour)")
+
+    if max_size is None:
+        return im
 
     new_shape[0] = max(new_shape[0], max_size[0])
     new_shape[1] = max(new_shape[1], max_size[1])
@@ -91,6 +103,9 @@ if __name__ == "__main__":
     parser.add_argument("--remove-watermark",
                         help="remove watermark",
                         action="store_true")
+    parser.add_argument("--keep-size",
+                        help="do not add borders, keep the original page size",
+                        action="store_true")
     args = parser.parse_args()
 
     if not os.path.isdir(args.input):
@@ -102,6 +117,8 @@ if __name__ == "__main__":
         template = cv2.imread("./data/template.png", cv2.IMREAD_GRAYSCALE)
 
     filenames, m = parse(args.input)
+    if args.keep_size:
+        m = None
     if len(filenames) > 0:
         c = process_image(input_fn=filenames[args.skip],
                           max_size=m,
